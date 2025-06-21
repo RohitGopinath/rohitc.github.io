@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rohit Chilukoty - Product Leader</title>
+    <style>
+        /* --- Universal Styles & Font Import --- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --background-color: #0d0d0d; /* Slightly softer black */
+            --text-color: #f5f5f7;
+            --accent-color: #0A84FF;
+            --secondary-text-color: #888;
+            --font-main: 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* --- Reusable Components --- */
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 120px 0;
+        }
+
+        /* --- Animations --- */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- Hero Section --- */
+        .hero {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-height: 100vh;
+            padding: 0 20px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem); /* Responsive font size */
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 24px;
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            font-weight: 400;
+            max-width: 600px;
+            color: var(--secondary-text-color);
+            margin-bottom: 40px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: var(--accent-color);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 50px; /* Pill shape */
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: scale(1.05);
+            background-color: #0077e6;
+        }
+
+        /* --- Case Study Showcase Section --- */
+        .showcase {
+            padding: 100px 0;
+        }
+
+        .case-study {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-height: 100vh;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .case-study h2 {
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        .case-study .big-number {
+            font-size: clamp(3.5rem, 8vw, 6rem);
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 16px;
+            line-height: 1;
+        }
+         .big-number-description {
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            color: var(--secondary-text-color);
+            max-width: 500px;
+            margin-bottom: 32px;
+        }
+
+        .case-study-story {
+            max-width: 550px;
+        }
+        
+        .case-study-story p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .case-study-story strong {
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .case-study a {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        .case-study a:hover {
+            text-decoration: underline;
+        }
+
+        /* Visual Asset Placeholder */
+        .visual-placeholder {
+            width: 100%;
+            max-width: 600px;
+            height: 400px;
+            background-color: #222;
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 40px;
+            color: #555;
+            font-size: 1.2rem;
+            /* In a real scenario, you'd have an img tag here instead */
+        }
+        
+        /* --- Insights Section --- */
+        .insights {
+            text-align: center;
+        }
+
+        .insights h2 {
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            margin-bottom: 60px;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            text-align: left;
+        }
+
+        .insight-card {
+            background-color: #1a1a1a;
+            padding: 30px;
+            border-radius: 16px;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            cursor: pointer;
+        }
+
+        .insight-card:hover {
+            transform: translateY(-10px);
+            background-color: #222;
+        }
+
+        .insight-card h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .insight-card p {
+            color: var(--secondary-text-color);
+            font-size: 1rem;
+        }
+
+        /* --- Footer/Contact Section --- */
+        .footer {
+            text-align: center;
+            padding-bottom: 80px;
+        }
+
+        .footer h2 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            margin-bottom: 24px;
+        }
+        
+        .footer .bio {
+            max-width: 550px;
+            margin: 0 auto 24px auto;
+            line-height: 1.6;
+            color: var(--secondary-text-color);
+        }
+
+        .footer .omelette-line {
+            font-style: italic;
+            color: #777;
+            margin-bottom: 40px;
+        }
+
+        .footer-links a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            margin: 0 15px;
+            font-size: 1.1rem;
+            transition: color 0.3s ease;
+        }
+        .footer-links a:hover {
+            color: var(--accent-color);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- HERO SECTION -->
+    <section class="hero" id="home">
+        <div class="fade-in">
+            <h1>Product Leader. Engineer at heart.<br>I build for what's next.</h1>
+            <p>I specialize in turning complex technologies like AI and data into elegant, high-impact products.</p>
+            <a href="#work" class="cta-button">View My Work</a>
+        </div>
+    </section>
+
+    <!-- CASE STUDIES SHOWCASE -->
+    <main id="work" class="showcase">
+        
+        <!-- Case Study 1: 0-to-1 Product -->
+        <section class="case-study fade-in">
+            <!-- IMPORTANT: Replace this div with an <img> tag pointing to your phone mockup -->
+            <div class="visual-placeholder">Your Phone Mockup Here</div>
+            <h2>Building a Platform from Zero to One.</h2>
+            <div class="big-number">3,000+</div>
+            <p class="big-number-description">Unique User Registrations in the First Month</p>
+            <div class="case-study-story">
+                <p><strong>Project:</strong> Launched a new mobile-first platform to connect blue-collar workers with income opportunities.</p>
+                <p><strong>My Role:</strong> I led the product from initial concept to launch, owning the roadmap, designing the user experience, and driving the go-to-market strategy.</p>
+                <a href="#">See the Process (Coming Soon) →</a>
+            </div>
+        </section>
+
+        <!-- Case Study 2: AI & Deep Tech -->
+        <section class="case-study fade-in">
+             <!-- IMPORTANT: Replace this div with an <img> tag pointing to your abstract AI graphic -->
+            <div class="visual-placeholder">Your Abstract AI Graphic Here</div>
+            <h2>Integrating Intelligence.</h2>
+            <div class="big-number">-60%</div>
+            <p class="big-number-description">Reduction in Core Process Turnaround Time</p>
+            <div class="case-study-story">
+                <p><strong>Project:</strong> Integrated LLM capabilities to automate a critical user workflow. Contributed to a key ML patent on the underlying technology.</p>
+                <p><strong>My Role:</strong> I identified the strategic opportunity for AI, defined the product requirements, and collaborated with engineering to ship a more intelligent, efficient solution.</p>
+                <a href="#">Unpack the Strategy (Coming Soon) →</a>
+            </div>
+        </section>
+
+        <!-- Case Study 3: Enterprise Scale -->
+        <section class="case-study fade-in">
+             <!-- IMPORTANT: Replace this div with an <img> tag pointing to your platform diagram -->
+            <div class="visual-placeholder">Your Platform Architecture Diagram Here</div>
+            <h2>Orchestrating a Platform at Scale.</h2>
+            <div class="big-number">10M+</div>
+            <p class="big-number-description">Users Enabled Across the Ecosystem</p>
+            <div class="case-study-story">
+                <p><strong>Project:</strong> Architected and delivered the integration of five national banks onto a single, unified SaaS platform.</p>
+                <p><strong>My Role:</strong> I owned the technical product strategy, managed complex stakeholder relationships, and defined over 50 APIs to ensure seamless, secure, and reliable operation.</p>
+                <a href="#">Explore the Architecture (Coming Soon) →</a>
+            </div>
+        </section>
+
+    </main>
+    
+    <!-- INSIGHTS SECTION -->
+    <section class="container insights fade-in" id="insights">
+        <h2>My Playbook</h2>
+        <div class="insights-grid">
+            <div class="insight-card">
+                <h3>Framework: A Guide to 0-to-1 Product Building</h3>
+                <p>A breakdown of the essential steps for taking a product from pure concept to market reality.</p>
+            </div>
+            <div class="insight-card">
+                <h3>Perspective: How to Productize, Not Just Use, AI</h3>
+                <p>Moving beyond the hype to find real, scalable value with machine learning and large language models.</p>
+            </div>
+            <div class="insight-card">
+                <h3>Reflection: From Engineer to Product Leader</h3>
+                <p>Leveraging a technical background to build better products and lead more effective teams.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER & CONTACT -->
+    <footer class="container footer fade-in" id="contact">
+        <h2>Let's connect.</h2>
+        <p class="bio">I'm Rohit, a product manager with a passion for solving complex puzzles at the intersection of technology and user needs. My goal is to build products that are not only powerful but also intuitive and elegant.</p>
+        <p class="omelette-line">Forever in pursuit of the perfect omelette bread recipe.</p>
+        <div class="footer-links">
+            <a href="mailto:rohit.chilukoty@gmail.com">Email</a>
+            <a href="https://www.linkedin.com/in/rohit-chilukoty/" target="_blank">LinkedIn</a> <!-- Replace with your actual LinkedIn URL -->
+            <a href="#" target="_blank">Resume</a> <!-- Replace # with a link to your resume PDF -->
+        </div>
+    </footer>
+
+    <script>
+        // JavaScript for fade-in animations on scroll
+        const faders = document.querySelectorAll('.fade-in');
+
+        const appearOptions = {
+            threshold: 0.2, // Trigger when 20% of the element is visible
+            rootMargin: "0px 0px -50px 0px"
+        };
+
+        const appearOnScroll = new IntersectionObserver(function(
+            entries,
+            appearOnScroll
+        ) {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) {
+                    return;
+                } else {
+                    entry.target.classList.add('visible');
+                    appearOnScroll.unobserve(entry.target);
+                }
+            });
+        },
+        appearOptions);
+
+        faders.forEach(fader => {
+            appearOnScroll.observe(fader);
+        });
+    </script>
+</body>
+</html>
