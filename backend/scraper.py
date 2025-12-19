@@ -1,66 +1,116 @@
-import requests
-from bs4 import BeautifulSoup
+import re
+from datetime import datetime
+from playwright.sync_api import sync_playwright
 from sqlalchemy.orm import sessionmaker
 from models import engine, Base, IPO, GMPPrice
-from datetime import datetime
-import re
-import random
 
 # Init DB
 Base.metadata.create_all(bind=engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
-def seed_dummy_data():
-    print("Seeding dummy data...")
-    dummy_ipos = [
-        {"name": "Tata Technologies", "price": "500", "gmp": 400, "type": "Mainboard", "status": "Closed"},
-        {"name": "Mamaearth (Honasa)", "price": "324", "gmp": 30, "type": "Mainboard", "status": "Closed"},
-        {"name": "Ola Electric", "price": "76", "gmp": 12, "type": "Mainboard", "status": "Upcoming"},
-        {"name": "Swiggy", "price": "350", "gmp": 80, "type": "Mainboard", "status": "Upcoming"},
-        {"name": "FirstCry", "price": "450", "gmp": 100, "type": "Mainboard", "status": "Open"},
-        {"name": "Australian Premium Solar", "price": "140", "gmp": 50, "type": "SME", "status": "Open"},
-        {"name": "DelaPlex Ltd", "price": "192", "gmp": 150, "type": "SME", "status": "Upcoming"},
-    ]
+def clean_currency(value):
+    if not value:
+        return 0.0
+    # Remove ₹, comma, % and whitespace
+    clean = re.sub(r'[^\d.-]', '', str(value))
+    try:
+        return float(clean)
+    except ValueError:
+        return 0.0
 
-    for data in dummy_ipos:
-        existing = session.query(IPO).filter(IPO.name == data["name"]).first()
-        if not existing:
-            new_ipo = IPO(
-                name=data["name"],
-                ipo_type=data["type"],
-                price_band=f"₹{data['price']}",
-                status=data["status"],
-                open_date="2024-02-10",
-                close_date="2024-02-13",
-                lot_size=50 if data["type"] == "Mainboard" else 1000
-            )
-            session.add(new_ipo)
+def scrape_ipowatch():
+    print("Starting Playwright scraper for ipowatch.in...")
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+
+        try:
+            url = "https://ipowatch.in/ipo-grey-market-premium-latest-ipo-gmp/"
+            print(f"Navigating to {url}...")
+            page.goto(url, timeout=60000)
+
+            # Wait for table
+            page.wait_for_selector("table", timeout=20000)
+
+            # Find the main data table
+            # Usually the first table on this page
+            rows = page.locator("table tbody tr").all()
+            print(f"Found {len(rows)} rows.")
+
+            count_added = 0
+
+            for row in rows:
+                cells = row.locator("td").all()
+                if len(cells) < 5:
+                    continue
+
+                texts = [c.inner_text().strip() for c in cells]
+
+                # IPOWatch Headers: Stock / IPO | GMP | Price | Gain | Date | Type
+                # Note: First row might be header
+                if "Stock" in texts[0] or "IPO" in texts[0]:
+                    continue
+
+                ipo_name = texts[0]
+                gmp_str = texts[1]
+                price_str = texts[2]
+                # date_str = texts[4] # e.g. "20-Feb"
+                ipo_type = texts[5] if len(texts) > 5 else "Mainboard"
+
+                # Determine status based on name or GMP presence
+                # If GMP is "--", it might be inactive
+                status = "Upcoming"
+                if gmp_str == "--" or gmp_str == "-":
+                    # Maybe closed or too early
+                    pass
+
+                # Try to parse GMP
+                gmp_value = clean_currency(gmp_str)
+
+                # Normalize Type
+                if "SME" in ipo_type:
+                    normalized_type = "SME"
+                else:
+                    normalized_type = "Mainboard"
+
+                # Update DB
+                existing = session.query(IPO).filter(IPO.name == ipo_name).first()
+
+                if not existing:
+                    new_ipo = IPO(
+                        name=ipo_name,
+                        ipo_type=normalized_type,
+                        price_band=price_str,
+                        status=status,
+                        lot_size=0
+                    )
+                    session.add(new_ipo)
+                    session.commit()
+                    session.refresh(new_ipo)
+                    ipo_id = new_ipo.id
+                else:
+                    ipo_id = existing.id
+                    existing.price_band = price_str
+                    session.commit()
+
+                # Add GMP Entry
+                new_gmp = GMPPrice(
+                    ipo_id=ipo_id,
+                    price=gmp_value,
+                    updated_at=datetime.utcnow()
+                )
+                session.add(new_gmp)
+                count_added += 1
+
             session.commit()
+            print(f"Scraping complete. Processed {count_added} records.")
 
-            # Add GMP history
-            gmp_val = data["gmp"]
-            new_gmp = GMPPrice(
-                ipo_id=new_ipo.id,
-                price=gmp_val,
-                updated_at=datetime.utcnow()
-            )
-            session.add(new_gmp)
-
-    session.commit()
-    print("Dummy data seeded.")
-
-def scrape_investorgain():
-    print("Starting scraper...")
-    # Attempt scraping (mock implementation for now given robots.txt blocks)
-    # If scraping yields no results, we seed.
-
-    # Check if DB is empty
-    count = session.query(IPO).count()
-    if count == 0:
-        seed_dummy_data()
-    else:
-        print(f"Database already has {count} records.")
+        except Exception as e:
+            print(f"Scraper Error: {e}")
+        finally:
+            browser.close()
 
 if __name__ == "__main__":
-    scrape_investorgain()
+    scrape_ipowatch()
