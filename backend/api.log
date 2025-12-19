@@ -1,0 +1,9 @@
+INFO:     Started server process [9180]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:46838 - "GET /market-indices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55176 - "GET /ipos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55162 - "GET /market-indices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55162 - "GET /ipos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55162 - "GET /ipos/1 HTTP/1.1" 200 OK
