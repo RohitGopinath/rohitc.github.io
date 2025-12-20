@@ -56,8 +56,37 @@ def scrape_ipowatch():
                 ipo_name = texts[0]
                 gmp_str = texts[1]
                 price_str = texts[2]
-                # date_str = texts[4] # e.g. "20-Feb"
+                date_str = texts[4] # e.g. "20-Feb" or "20-22 Feb"
                 ipo_type = texts[5] if len(texts) > 5 else "Mainboard"
+
+                # Parse Dates
+                open_date = None
+                close_date = None
+                try:
+                    current_year = datetime.now().year
+                    if "-" in date_str:
+                        parts = date_str.split("-")
+                        if len(parts) == 2:
+                            # E.g. "20-22 Feb"
+                            start_day = parts[0].strip()
+                            end_part = parts[1].strip() # "22 Feb"
+
+                            # Parse end part
+                            end_dt = datetime.strptime(f"{end_part} {current_year}", "%d %b %Y")
+                            close_date = end_dt.strftime("%Y-%m-%d")
+
+                            # Parse start part (needs month from end_part if missing)
+                            month_str = end_part.split(" ")[-1]
+                            start_dt = datetime.strptime(f"{start_day} {month_str} {current_year}", "%d %b %Y")
+                            open_date = start_dt.strftime("%Y-%m-%d")
+
+                    else:
+                         # Single date or unknown
+                         pass
+                except Exception:
+                    # Keep as string or null if parsing fails
+                    open_date = date_str
+                    close_date = date_str
 
                 # Determine status based on name or GMP presence
                 # If GMP is "--", it might be inactive
@@ -84,6 +113,8 @@ def scrape_ipowatch():
                         ipo_type=normalized_type,
                         price_band=price_str,
                         status=status,
+                        open_date=open_date,
+                        close_date=close_date,
                         lot_size=0
                     )
                     session.add(new_ipo)
@@ -93,6 +124,8 @@ def scrape_ipowatch():
                 else:
                     ipo_id = existing.id
                     existing.price_band = price_str
+                    existing.open_date = open_date
+                    existing.close_date = close_date
                     session.commit()
 
                 # Add GMP Entry

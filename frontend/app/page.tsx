@@ -4,6 +4,7 @@ import axios from 'axios';
 import Navbar from '@/components/Navbar';
 import Ticker from '@/components/Ticker';
 import IPOCard from '@/components/IPOCard';
+import NewsSection from '@/components/NewsSection';
 import Link from 'next/link';
 
 interface IPO {
@@ -51,14 +52,11 @@ export default function Home() {
           <Link href="/ipo" className="px-8 py-3 rounded-full bg-black text-white font-medium hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl">
             View All IPOs
           </Link>
-          <button className="px-8 py-3 rounded-full bg-white text-gray-900 border border-gray-200 font-medium hover:bg-gray-50 transition-all">
-            Market News
-          </button>
         </div>
       </section>
 
       {/* Hot IPOs Grid */}
-      <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto mb-16">
         <div className="flex justify-between items-end mb-8">
           <h2 className="text-3xl font-bold text-gray-900">Trending IPOs</h2>
           <Link href="/ipo" className="text-blue-600 font-medium hover:underline">View All &rarr;</Link>
@@ -82,6 +80,9 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* Market News Section */}
+      <NewsSection />
     </main>
   );
 }

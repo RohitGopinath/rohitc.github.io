@@ -18,3 +18,6 @@
  GET / 200 in 878ms (compile: 187ms, render: 691ms)
  GET /ipo 200 in 110ms (compile: 16ms, render: 95ms)
  GET /ipo/1 200 in 383ms (compile: 271ms, render: 112ms)
+ GET / 200 in 3.5s (compile: 2.6s, render: 931ms)
+ GET /ipo 200 in 136ms (compile: 45ms, render: 91ms)
+ GET /ipo/1 200 in 223ms (compile: 127ms, render: 96ms)

@@ -74,6 +74,36 @@ def get_ipo_details(ipo_id: int, db: Session = Depends(get_db)):
         "close_date": ipo.close_date
     }
 
+@app.get("/news")
+def get_market_news():
+    """Fetch latest market news using yfinance."""
+    try:
+        # Fetch news for Nifty 50 to get general Indian market news
+        ticker = yf.Ticker("^NSEI")
+        news_items = ticker.news
+
+        formatted_news = []
+        for item in news_items:
+            # Extract relevant fields
+            content = item.get('content', {})
+            if not content:
+                continue
+
+            formatted_news.append({
+                "id": content.get('id'),
+                "title": content.get('title'),
+                "summary": content.get('summary', ''),
+                "published_at": content.get('pubDate'),
+                "link": content.get('clickThroughUrl', {}).get('url'),
+                "source": content.get('provider', {}).get('displayName', 'Yahoo Finance')
+            })
+
+        return formatted_news[:6] # Return top 6
+    except Exception as e:
+        print(f"Error fetching news: {e}")
+        # Return empty list rather than error to allow UI to handle gracefully
+        return []
+
 @app.get("/market-indices")
 def get_market_indices():
     """Fetch live/delayed NIFTY and SENSEX data using yfinance."""
@@ -101,8 +131,5 @@ def get_market_indices():
         return data
     except Exception as e:
         print(f"Error fetching market data: {e}")
-        # Fallback dummy data if yfinance fails (e.g. no internet or rate limit)
-        return [
-            {"name": "NIFTY 50", "price": 22000.50, "change": 120.50, "percent": 0.55, "is_positive": True},
-            {"name": "SENSEX", "price": 72500.20, "change": -150.10, "percent": -0.21, "is_positive": False}
-        ]
+        # Strict Real Data: Return empty list or error, never mock data.
+        raise HTTPException(status_code=503, detail="Market data unavailable")
