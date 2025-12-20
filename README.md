@@ -59,22 +59,23 @@ The App will run at `http://localhost:3000`.
 
 ## Configuration (Optional)
 
-### Using PostgreSQL (PLSQL)
-If you prefer to use a production-grade database like PostgreSQL instead of SQLite:
+### Using MySQL
+If you prefer to use **MySQL** instead of the default SQLite:
 
-1. Install and start PostgreSQL.
-2. Create a database (e.g., `ipo_tracker`).
-3. Set the environment variable before running the backend:
+1. Install and start MySQL Server (e.g., via XAMPP, WAMP, or official installer).
+2. Create a database named `ipo_tracker`.
+3. Set the environment variable before running the backend.
+   *(Note: Replace `root` and `password` with your actual MySQL credentials)*
 
 **Mac/Linux:**
 ```bash
-export DATABASE_URL="postgresql://user:password@localhost/ipo_tracker"
+export DATABASE_URL="mysql+pymysql://root:password@localhost/ipo_tracker"
 uvicorn main:app --reload
 ```
 
 **Windows (PowerShell):**
 ```powershell
-$env:DATABASE_URL="postgresql://user:password@localhost/ipo_tracker"
+$env:DATABASE_URL="mysql+pymysql://root:password@localhost/ipo_tracker"
 uvicorn main:app --reload
 ```
 

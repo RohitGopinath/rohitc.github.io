@@ -5,3 +5,4 @@ beautifulsoup4
 requests
 yfinance
 psycopg2-binary
+pymysql
