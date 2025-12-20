@@ -2,6 +2,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
+import os
 
 Base = declarative_base()
 
@@ -49,7 +50,11 @@ class MarketIndex(Base):
     last_updated = Column(DateTime, default=datetime.utcnow)
 
 # Database Setup
-DATABASE_URL = "sqlite:///./backend/ipo_tracker.db"
-# Note: In production, switch to: "postgresql://user:password@host/dbname"
+# Use environment variable for DB connection, default to SQLite
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./backend/ipo_tracker.db")
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+connect_args = {}
+if "sqlite" in DATABASE_URL:
+    connect_args = {"check_same_thread": False}
+
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
