@@ -1,9 +1,25 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, sessionmaker
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.background import BackgroundScheduler
 from models import engine, Base, IPO, GMPPrice, MarketIndex
+from scraper import scrape_ipowatch
 import yfinance as yf
 from datetime import datetime, timedelta
+
+# Scheduler Setup
+scheduler = BackgroundScheduler()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Schedule scraping every 4 hours
+    scheduler.add_job(scrape_ipowatch, 'interval', hours=4)
+    scheduler.start()
+    print("Scheduler started: Scraper will run every 4 hours.")
+    yield
+    scheduler.shutdown()
+    print("Scheduler shut down.")
 
 # Database Dependency
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -15,7 +31,7 @@ def get_db():
     finally:
         db.close()
 
-app = FastAPI(title="IPO Tracker Pro API")
+app = FastAPI(title="IPO Tracker Pro API", lifespan=lifespan)
 
 # CORS Setup (Allow Frontend Access)
 app.add_middleware(
