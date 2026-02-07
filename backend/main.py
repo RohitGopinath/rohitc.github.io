@@ -15,8 +15,10 @@ scheduler = BackgroundScheduler()
 async def lifespan(app: FastAPI):
     # Schedule scraping every 4 hours
     scheduler.add_job(scrape_ipowatch, 'interval', hours=4)
+    # Schedule an immediate scrape shortly after startup (10 seconds delay)
+    scheduler.add_job(scrape_ipowatch, 'date', run_date=datetime.now() + timedelta(seconds=10))
     scheduler.start()
-    print("Scheduler started: Scraper will run every 4 hours.")
+    print("Scheduler started: Scraper will run every 4 hours and once on startup.")
     yield
     scheduler.shutdown()
     print("Scheduler shut down.")

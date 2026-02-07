@@ -53,6 +53,10 @@ class MarketIndex(Base):
 # Use environment variable for DB connection, default to SQLite
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./backend/ipo_tracker.db")
 
+# Fix for Render/Supabase which might provide 'postgres://' but SQLAlchemy needs 'postgresql://'
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 connect_args = {}
 if "sqlite" in DATABASE_URL:
     connect_args = {"check_same_thread": False}

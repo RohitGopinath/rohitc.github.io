@@ -20,7 +20,8 @@ export default function IPOListPage() {
   useEffect(() => {
     async function fetchIPOs() {
       try {
-        const res = await axios.get('http://localhost:8000/ipos');
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await axios.get(`${API_URL}/ipos`);
         setIpos(res.data);
       } catch (e) {
         console.error("Error loading IPOs", e);

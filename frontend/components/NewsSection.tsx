@@ -18,7 +18,8 @@ export default function NewsSection() {
   useEffect(() => {
     async function fetchNews() {
       try {
-        const res = await axios.get('http://localhost:8000/news');
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await axios.get(`${API_URL}/news`);
         setNews(res.data);
       } catch (e) {
         console.error("Failed to load news", e);
