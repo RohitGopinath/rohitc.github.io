@@ -51,7 +51,12 @@ class MarketIndex(Base):
 
 # Database Setup
 # Use environment variable for DB connection, default to SQLite
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./backend/ipo_tracker.db")
+# If running from backend directory, path should be ./ipo_tracker.db
+# If running from root, path should be ./backend/ipo_tracker.db
+# We can use absolute path to be safe
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "ipo_tracker.db")
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DB_PATH}")
 
 # Fix for Render/Supabase which might provide 'postgres://' but SQLAlchemy needs 'postgresql://'
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
