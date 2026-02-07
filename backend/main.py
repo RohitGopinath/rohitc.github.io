@@ -50,23 +50,48 @@ def read_root():
 
 @app.get("/ipos")
 def get_ipos(db: Session = Depends(get_db)):
-    """Fetch all IPOs with their latest GMP."""
+    """Fetch all IPOs with their latest GMP and sparkline data."""
     ipos = db.query(IPO).all()
     results = []
     for ipo in ipos:
         latest_gmp = 0
+        trend_data = []
+
         if ipo.gmp_prices:
             latest_gmp = ipo.gmp_prices[-1].price
+            # Get last 7 days of GMP history for sparkline
+            trend_data = [{"price": g.price, "date": g.updated_at} for g in ipo.gmp_prices[-7:]]
+
+        # Calculate Growth % (GMP / Base Price * 100)
+        # Assuming Base Price is the higher end of price band if range, or single value
+        base_price = 0
+        if ipo.price_band:
+            try:
+                import re
+                prices = re.findall(r'\d+', ipo.price_band.replace(',', ''))
+                if prices:
+                    base_price = float(prices[-1]) # Use upper band
+            except:
+                pass
+
+        growth_percent = 0
+        if base_price > 0:
+            growth_percent = (latest_gmp / base_price) * 100
 
         results.append({
             "id": ipo.id,
             "name": ipo.name,
+            "symbol": ipo.symbol, # Ensure symbol is returned
             "type": ipo.ipo_type,
             "price_band": ipo.price_band,
+            "base_price": base_price,
             "status": ipo.status,
             "gmp": latest_gmp,
+            "growth_percent": round(growth_percent, 2),
+            "trend": trend_data,
             "open_date": ipo.open_date,
-            "close_date": ipo.close_date
+            "close_date": ipo.close_date,
+            "listing_date": ipo.listing_date
         })
     return results
 
