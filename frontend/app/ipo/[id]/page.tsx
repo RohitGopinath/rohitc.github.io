@@ -31,7 +31,8 @@ export default function IPODetailPage() {
   useEffect(() => {
     async function fetchDetail() {
       try {
-        const res = await axios.get(`http://localhost:8000/ipos/${params.id}`);
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await axios.get(`${API_URL}/ipos/${params.id}`);
         setIpo(res.data);
       } catch (e) {
         console.error("Error loading detail", e);

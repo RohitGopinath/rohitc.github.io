@@ -18,7 +18,8 @@ export default function Ticker() {
     // In a real app, use SWR or React Query
     const fetchData = async () => {
       try {
-        const res = await axios.get('http://localhost:8000/market-indices');
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await axios.get(`${API_URL}/market-indices`);
         setIndices(res.data);
       } catch (e) {
         console.error("Failed to fetch ticker data", e);

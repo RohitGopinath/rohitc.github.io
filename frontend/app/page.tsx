@@ -22,7 +22,8 @@ export default function Home() {
   useEffect(() => {
     async function fetchIPOs() {
       try {
-        const res = await axios.get('http://localhost:8000/ipos');
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await axios.get(`${API_URL}/ipos`);
         // Filter for "Hot" IPOs (e.g., Open or high GMP)
         // For MVP, just taking the first 3
         setHotIpos(res.data.slice(0, 3));
