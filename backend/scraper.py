@@ -1,8 +1,9 @@
 import re
+import time
 from datetime import datetime
 from playwright.sync_api import sync_playwright
 from sqlalchemy.orm import sessionmaker
-from models import engine, Base, IPO, GMPPrice
+from models import engine, Base, IPO, GMPPrice, Subscription
 
 # Init DB
 Base.metadata.create_all(bind=engine)
@@ -19,126 +20,196 @@ def clean_currency(value):
     except ValueError:
         return 0.0
 
+def parse_date(date_str):
+    if not date_str:
+        return None
+    try:
+        # Expected formats: "20 Feb", "Feb 20, 2024", "20-Feb-2024"
+        current_year = datetime.now().year
+
+        # If it's just "20 Feb", append year
+        if re.match(r'\d{1,2}\s+[A-Za-z]{3}$', date_str.strip()):
+            date_str = f"{date_str} {current_year}"
+            return datetime.strptime(date_str, "%d %b %Y").strftime("%Y-%m-%d")
+
+        # If it's "Feb 20, 2024"
+        try:
+            return datetime.strptime(date_str, "%b %d, %Y").strftime("%Y-%m-%d")
+        except:
+            pass
+
+        return date_str # Return original if parse fails
+    except:
+        return date_str
+
+def scrape_ipo_details(page, ipo_obj):
+    """
+    Scrapes the detail page for an IPO.
+    Updates ipo_obj with timeline, financials, subscription.
+    """
+    print(f"  Scraping details for {ipo_obj.name}...")
+
+    # 1. Timeline (Tentative Timetable)
+    try:
+        # Look for table containing "Open Date", "Close Date"
+        # Strategy: Find all tables, check headers/first col
+        tables = page.locator("table").all()
+
+        for table in tables:
+            text = table.inner_text().lower()
+
+            # Timetable
+            if "open date" in text and "close date" in text:
+                rows = table.locator("tr").all()
+                for row in rows:
+                    cols = row.locator("td").all()
+                    if len(cols) < 2: continue
+                    label = cols[0].inner_text().lower()
+                    val = cols[1].inner_text().strip()
+
+                    if "open date" in label:
+                        ipo_obj.open_date = val
+                    elif "close date" in label:
+                        ipo_obj.close_date = val
+                    elif "allotment date" in label:
+                        ipo_obj.allotment_date = val
+                    elif "refunds" in label:
+                        ipo_obj.refund_date = val
+                    elif "listing date" in label:
+                        ipo_obj.listing_date = val
+
+            # Financials (IPO Details)
+            if "face value" in text or "price band" in text:
+                rows = table.locator("tr").all()
+                for row in rows:
+                    cols = row.locator("td").all()
+                    if len(cols) < 2: continue
+                    label = cols[0].inner_text().lower()
+                    val = cols[1].inner_text().strip()
+
+                    if "price band" in label:
+                        ipo_obj.price_band = val
+                    elif "lot size" in label:
+                        try:
+                            ipo_obj.lot_size = int(clean_currency(val))
+                        except: pass
+                    elif "total issue size" in label:
+                        ipo_obj.issue_size = val
+                    elif "fresh issue" in label:
+                        ipo_obj.fresh_issue = val
+                    elif "offer for sale" in label:
+                        ipo_obj.offer_for_sale = val
+
+            # Subscription (Subscription Status)
+            if "qib" in text and "nii" in text:
+                 # Clear old subscriptions
+                 session.query(Subscription).filter(Subscription.ipo_id == ipo_obj.id).delete()
+
+                 rows = table.locator("tr").all()
+                 # Skip header
+                 for row in rows[1:]:
+                     cols = row.locator("td").all()
+                     if len(cols) < 2: continue
+                     cat = cols[0].inner_text().strip()
+                     times = cols[1].inner_text().strip()
+
+                     if not cat: continue
+
+                     sub = Subscription(
+                         ipo_id=ipo_obj.id,
+                         category=cat,
+                         times_subscribed=clean_currency(times)
+                     )
+                     session.add(sub)
+
+        session.commit()
+    except Exception as e:
+        print(f"  Error scraping details: {e}")
+
+
 def scrape_ipowatch():
     print("Starting Playwright scraper for ipowatch.in...")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+        context = browser.new_context(user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        page = context.new_page()
 
         try:
             url = "https://ipowatch.in/ipo-grey-market-premium-latest-ipo-gmp/"
             print(f"Navigating to {url}...")
             page.goto(url, timeout=60000)
 
-            # Wait for table
             page.wait_for_selector("table", timeout=20000)
-
-            # Find the main data table
-            # Usually the first table on this page
             rows = page.locator("table tbody tr").all()
-            print(f"Found {len(rows)} rows.")
+            print(f"Found {len(rows)} rows in main table.")
 
-            count_added = 0
+            processed_count = 0
 
-            for row in rows:
+            # Limit to top 10 for performance/MVP, or scrape all?
+            # User wants a real app, let's scrape first 10-15 to be safe
+            for i, row in enumerate(rows):
+                if i > 15: break
+
                 cells = row.locator("td").all()
-                if len(cells) < 5:
-                    continue
+                if len(cells) < 5: continue
 
                 texts = [c.inner_text().strip() for c in cells]
-
-                # IPOWatch Headers: Stock / IPO | GMP | Price | Gain | Date | Type
-                # Note: First row might be header
-                if "Stock" in texts[0] or "IPO" in texts[0]:
-                    continue
+                if "Stock" in texts[0] or "IPO" in texts[0]: continue
 
                 ipo_name = texts[0]
                 gmp_str = texts[1]
                 price_str = texts[2]
-                date_str = texts[4] # e.g. "20-Feb" or "20-22 Feb"
                 ipo_type = texts[5] if len(texts) > 5 else "Mainboard"
 
-                # Parse Dates
-                open_date = None
-                close_date = None
-                try:
-                    current_year = datetime.now().year
-                    if "-" in date_str:
-                        parts = date_str.split("-")
-                        if len(parts) == 2:
-                            # E.g. "20-22 Feb"
-                            start_day = parts[0].strip()
-                            end_part = parts[1].strip() # "22 Feb"
-
-                            # Parse end part
-                            end_dt = datetime.strptime(f"{end_part} {current_year}", "%d %b %Y")
-                            close_date = end_dt.strftime("%Y-%m-%d")
-
-                            # Parse start part (needs month from end_part if missing)
-                            month_str = end_part.split(" ")[-1]
-                            start_dt = datetime.strptime(f"{start_day} {month_str} {current_year}", "%d %b %Y")
-                            open_date = start_dt.strftime("%Y-%m-%d")
-
-                    else:
-                         # Single date or unknown
-                         pass
-                except Exception:
-                    # Keep as string or null if parsing fails
-                    open_date = date_str
-                    close_date = date_str
-
-                # Determine status based on name or GMP presence
-                # If GMP is "--", it might be inactive
-                status = "Upcoming"
-                if gmp_str == "--" or gmp_str == "-":
-                    # Maybe closed or too early
-                    pass
-
-                # Try to parse GMP
-                gmp_value = clean_currency(gmp_str)
+                # Extract Detail Link
+                link_el = cells[0].locator("a").first
+                detail_url = None
+                if link_el.count() > 0:
+                    detail_url = link_el.get_attribute("href")
 
                 # Normalize Type
-                if "SME" in ipo_type:
-                    normalized_type = "SME"
-                else:
-                    normalized_type = "Mainboard"
+                normalized_type = "SME" if "SME" in ipo_type else "Mainboard"
 
-                # Update DB
+                # Create/Update IPO
                 existing = session.query(IPO).filter(IPO.name == ipo_name).first()
-
                 if not existing:
                     new_ipo = IPO(
                         name=ipo_name,
                         ipo_type=normalized_type,
                         price_band=price_str,
-                        status=status,
-                        open_date=open_date,
-                        close_date=close_date,
-                        lot_size=0
+                        status="Upcoming" # Default, will refine
                     )
                     session.add(new_ipo)
                     session.commit()
                     session.refresh(new_ipo)
-                    ipo_id = new_ipo.id
+                    ipo_obj = new_ipo
                 else:
-                    ipo_id = existing.id
                     existing.price_band = price_str
-                    existing.open_date = open_date
-                    existing.close_date = close_date
                     session.commit()
+                    ipo_obj = existing
 
-                # Add GMP Entry
-                new_gmp = GMPPrice(
-                    ipo_id=ipo_id,
-                    price=gmp_value,
-                    updated_at=datetime.utcnow()
-                )
+                # Add GMP
+                gmp_val = clean_currency(gmp_str)
+                # Avoid duplicate GMP entries for same day/time?
+                # For now, just add. We can clean up later or take latest.
+                new_gmp = GMPPrice(ipo_id=ipo_obj.id, price=gmp_val)
                 session.add(new_gmp)
-                count_added += 1
+                session.commit()
 
-            session.commit()
-            print(f"Scraping complete. Processed {count_added} records.")
+                # Scrape Details if URL exists
+                if detail_url:
+                    try:
+                        detail_page = context.new_page()
+                        detail_page.goto(detail_url, timeout=30000)
+                        scrape_ipo_details(detail_page, ipo_obj)
+                        detail_page.close()
+                    except Exception as e:
+                        print(f"  Failed to load detail page {detail_url}: {e}")
+
+                processed_count += 1
+
+            print(f"Scraping complete. Processed {processed_count} IPOs.")
 
         except Exception as e:
             print(f"Scraper Error: {e}")
