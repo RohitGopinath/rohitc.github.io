@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   LayoutDashboard,
@@ -12,13 +12,11 @@ import {
   X,
   Menu,
   Zap,
-  HelpCircle,
-  Sun,
-  Moon
+  HelpCircle
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
-import { useTheme } from 'next-themes';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -27,12 +25,6 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
@@ -79,16 +71,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           })}
         </nav>
 
-        {/* Bottom Actions (Theme Toggle) */}
+        {/* Bottom Actions */}
         <div className="mt-auto flex flex-col gap-4 items-center mb-4">
-           {mounted && (
-             <button
-               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-               className="p-3 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-xl transition-all"
-             >
-               {theme === 'dark' ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
-             </button>
-           )}
            <button className="p-3 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-xl transition-all">
              <HelpCircle className="w-6 h-6" />
            </button>
@@ -141,6 +125,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                />
                <div className="absolute right-2 px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-700 text-[10px] text-slate-500 dark:text-slate-400 font-mono">⌘K</div>
             </div>
+
+            <ThemeToggle />
 
             <button className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all">
               <Settings className="w-5 h-5" />
