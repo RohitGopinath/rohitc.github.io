@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { PredictorModal } from "@/components/predictor-modal";
+import { AuthButton } from "@/components/auth-button";
 
 // --- COMPONENTS ---
 
@@ -146,6 +147,7 @@ function TopBar({ onSearch }: { onSearch: (val: string) => void }) {
              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full border border-white dark:border-slate-900"></span>
            </button>
            <ThemeToggle />
+           <AuthButton />
          </div>
        </div>
        <MarketTicker />
