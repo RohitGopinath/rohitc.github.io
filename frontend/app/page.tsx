@@ -15,14 +15,14 @@ export default function Home() {
           {/* Section Header */}
           <div className="flex items-center justify-between mb-2">
              <div>
-               <h2 className="text-2xl font-bold text-slate-100 tracking-tight">Realtime Feed</h2>
-               <p className="text-sm text-slate-400 font-mono">
-                  TATA_TECH <span className="text-emerald-400">+85.2%</span> • GANDHAR <span className="text-emerald-400">+44.1%</span> • FLAIR <span className="text-slate-500">UNPRICED</span>
+               <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight transition-colors duration-300">Realtime Feed</h2>
+               <p className="text-sm text-slate-500 dark:text-slate-400 font-mono transition-colors duration-300">
+                  TATA_TECH <span className="text-emerald-600 dark:text-emerald-400">+85.2%</span> • GANDHAR <span className="text-emerald-600 dark:text-emerald-400">+44.1%</span> • FLAIR <span className="text-slate-400 dark:text-slate-500">UNPRICED</span>
                </p>
              </div>
 
              {/* Filter Toggle (Mobile) */}
-             <button className="lg:hidden p-2 bg-slate-800 text-slate-300 rounded-lg">
+             <button className="lg:hidden p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg">
                <Filter className="w-5 h-5" />
              </button>
           </div>
@@ -30,7 +30,7 @@ export default function Home() {
           {/* The Data Table */}
           <IPOTable />
 
-          <div className="text-center text-xs text-slate-600 font-mono pt-8">
+          <div className="text-center text-xs text-slate-400 dark:text-slate-600 font-mono pt-8 transition-colors duration-300">
             END OF ACTIVE LISTINGS
           </div>
         </div>
@@ -41,66 +41,66 @@ export default function Home() {
 
            {/* Quick Access */}
            <div>
-             <h3 className="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-               <span className="w-4 h-[1px] bg-emerald-500"></span>
+             <h3 className="text-xs font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-widest mb-4 flex items-center gap-2 transition-colors duration-300">
+               <span className="w-4 h-[1px] bg-emerald-600 dark:bg-emerald-500"></span>
                Quick Access
              </h3>
              <div className="grid grid-cols-2 gap-3">
-               <button className="p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-xl flex flex-col items-center gap-2 transition-all group">
-                 <FileText className="w-5 h-5 text-slate-400 group-hover:text-emerald-400" />
-                 <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wide">IPO Docs</span>
+               <button className="p-4 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 rounded-xl flex flex-col items-center gap-2 transition-all group shadow-sm dark:shadow-none">
+                 <FileText className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
+                 <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide">IPO Docs</span>
                </button>
-               <button className="p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-xl flex flex-col items-center gap-2 transition-all group">
-                 <Calculator className="w-5 h-5 text-slate-400 group-hover:text-emerald-400" />
-                 <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wide">Calc GMP</span>
+               <button className="p-4 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 rounded-xl flex flex-col items-center gap-2 transition-all group shadow-sm dark:shadow-none">
+                 <Calculator className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
+                 <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Calc GMP</span>
                </button>
-               <button className="p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-xl flex flex-col items-center gap-2 transition-all group">
-                 <Calendar className="w-5 h-5 text-slate-400 group-hover:text-emerald-400" />
-                 <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wide">Calendar</span>
+               <button className="p-4 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 rounded-xl flex flex-col items-center gap-2 transition-all group shadow-sm dark:shadow-none">
+                 <Calendar className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
+                 <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Calendar</span>
                </button>
-               <button className="p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-xl flex flex-col items-center gap-2 transition-all group">
-                 <MessageSquare className="w-5 h-5 text-slate-400 group-hover:text-emerald-400" />
-                 <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wide">Forum</span>
+               <button className="p-4 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 rounded-xl flex flex-col items-center gap-2 transition-all group shadow-sm dark:shadow-none">
+                 <MessageSquare className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
+                 <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Forum</span>
                </button>
              </div>
            </div>
 
            {/* Advanced Filters */}
-           <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-6">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+           <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-6 shadow-sm dark:shadow-none transition-colors duration-300">
+              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <Filter className="w-3 h-3" /> Advanced Filters
               </h3>
 
               {/* IPO Type */}
               <div className="space-y-3">
-                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">IPO Type</label>
+                 <label className="text-[10px] font-bold text-slate-600 dark:text-slate-500 uppercase tracking-wide">IPO Type</label>
                  <div className="space-y-2">
                    <label className="flex items-center gap-3 cursor-pointer group">
-                     <div className="w-4 h-4 rounded border border-slate-600 bg-emerald-500 flex items-center justify-center">
-                        <svg className="w-3 h-3 text-slate-900 font-bold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                     <div className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-emerald-500 flex items-center justify-center text-white">
+                        <svg className="w-3 h-3 font-bold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                      </div>
-                     <span className="text-sm text-slate-300 group-hover:text-white">Mainboard IPOs</span>
+                     <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-black dark:group-hover:text-white">Mainboard IPOs</span>
                    </label>
                    <label className="flex items-center gap-3 cursor-pointer group">
-                     <div className="w-4 h-4 rounded border border-slate-600 bg-emerald-500 flex items-center justify-center">
-                        <svg className="w-3 h-3 text-slate-900 font-bold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                     <div className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-emerald-500 flex items-center justify-center text-white">
+                        <svg className="w-3 h-3 font-bold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                      </div>
-                     <span className="text-sm text-slate-300 group-hover:text-white">SME Listings</span>
+                     <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-black dark:group-hover:text-white">SME Listings</span>
                    </label>
                  </div>
               </div>
 
               {/* System Status */}
               <div className="space-y-3">
-                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">System Status</label>
-                 <button className="w-full py-2 bg-emerald-900/30 border border-emerald-500/50 text-emerald-400 text-xs font-bold rounded uppercase hover:bg-emerald-900/50 transition-colors">
+                 <label className="text-[10px] font-bold text-slate-600 dark:text-slate-500 uppercase tracking-wide">System Status</label>
+                 <button className="w-full py-2 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-500/50 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded uppercase hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors">
                    All Statuses
                  </button>
                  <div className="grid grid-cols-2 gap-2">
-                    <button className="py-2 bg-slate-900 border border-slate-800 text-slate-400 text-xs font-bold rounded uppercase hover:text-white hover:border-slate-600 transition-colors">
+                    <button className="py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold rounded uppercase hover:text-black dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
                        Only Open
                     </button>
-                    <button className="py-2 bg-slate-900 border border-slate-800 text-slate-400 text-xs font-bold rounded uppercase hover:text-white hover:border-slate-600 transition-colors">
+                    <button className="py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold rounded uppercase hover:text-black dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
                        Upcoming
                     </button>
                  </div>
@@ -111,11 +111,11 @@ export default function Home() {
                  <div className="flex justify-between text-[10px] font-mono text-slate-500">
                     <span>GMP RANGE (MIN %)</span>
                  </div>
-                 <div className="relative h-1 bg-slate-800 rounded-full">
-                    <div className="absolute left-0 w-2/3 h-full bg-slate-600 rounded-full"></div>
-                    <div className="absolute left-2/3 top-1/2 -translate-y-1/2 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900 cursor-pointer hover:scale-110 transition-transform"></div>
+                 <div className="relative h-1 bg-slate-200 dark:bg-slate-800 rounded-full">
+                    <div className="absolute left-0 w-2/3 h-full bg-slate-400 dark:bg-slate-600 rounded-full"></div>
+                    <div className="absolute left-2/3 top-1/2 -translate-y-1/2 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 cursor-pointer hover:scale-110 transition-transform shadow-sm"></div>
                  </div>
-                 <div className="flex justify-between text-[10px] font-mono text-slate-600">
+                 <div className="flex justify-between text-[10px] font-mono text-slate-500 dark:text-slate-600">
                     <span>0%</span>
                     <span>50%</span>
                     <span>100%+</span>
@@ -126,15 +126,15 @@ export default function Home() {
 
            {/* Export Data */}
            <div>
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Export Data</h3>
+              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest mb-4">Export Data</h3>
               <div className="grid grid-cols-2 gap-3">
-                 <button className="p-3 bg-slate-800 border border-slate-700 rounded-lg flex flex-col items-center gap-1 hover:bg-slate-700 transition-colors group">
-                    <Download className="w-4 h-4 text-slate-400 group-hover:text-white" />
-                    <span className="text-[10px] font-bold text-slate-400 group-hover:text-white">CSV_DATA</span>
+                 <button className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg flex flex-col items-center gap-1 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors group shadow-sm dark:shadow-none">
+                    <Download className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:text-black dark:group-hover:text-white" />
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 group-hover:text-black dark:group-hover:text-white">CSV_DATA</span>
                  </button>
-                 <button className="p-3 bg-slate-800 border border-slate-700 rounded-lg flex flex-col items-center gap-1 hover:bg-slate-700 transition-colors group">
-                    <Terminal className="w-4 h-4 text-slate-400 group-hover:text-white" />
-                    <span className="text-[10px] font-bold text-slate-400 group-hover:text-white">TERMINAL_PRT</span>
+                 <button className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg flex flex-col items-center gap-1 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors group shadow-sm dark:shadow-none">
+                    <Terminal className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:text-black dark:group-hover:text-white" />
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 group-hover:text-black dark:group-hover:text-white">TERMINAL_PRT</span>
                  </button>
               </div>
            </div>

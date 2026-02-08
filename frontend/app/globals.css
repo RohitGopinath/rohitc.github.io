@@ -1,44 +1,44 @@
 @import "tailwindcss";
 
 :root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --muted: #e2e8f0;
+  --border: #cbd5e1;
+}
+
+.dark {
   --background: #0f172a;
   --foreground: #f8fafc;
-  --primary: #10b981; /* Green for GMP */
-  --secondary: #3b82f6; /* Blue for links/actions */
-  --accent: #f59e0b; /* Orange/Yellow for warnings/upcoming */
   --muted: #334155;
   --border: #1e293b;
 }
-
-/* @theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-} */
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
-  @apply antialiased;
+  @apply antialiased transition-colors duration-300;
 }
 
-/* Custom Scrollbar for dark theme */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #cbd5e1;
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
 }
-
-/* Utility classes if needed */
-.glass-panel {
-  @apply bg-slate-800/50 backdrop-blur-md border border-slate-700/50;
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
