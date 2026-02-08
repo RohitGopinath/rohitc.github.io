@@ -19,6 +19,46 @@ def clean_currency(value):
     except ValueError:
         return 0.0
 
+def parse_ipo_date(date_str):
+    """
+    Parses dates like "20-22 Feb" or "20 Feb" into (open_date, close_date)
+    Returns (YYYY-MM-DD, YYYY-MM-DD) or (None, None)
+    """
+    if not date_str or date_str.strip() == "":
+        return None, None
+
+    current_year = datetime.now().year
+
+    try:
+        # Case: "20-22 Feb"
+        if "-" in date_str:
+            parts = date_str.split("-")
+            if len(parts) == 2:
+                start_part = parts[0].strip() # "20"
+                end_full = parts[1].strip()   # "22 Feb"
+
+                # Extract month from end_full
+                month_str = end_full.split(" ")[-1]
+
+                start_dt_str = f"{start_part} {month_str} {current_year}"
+                end_dt_str = f"{end_full} {current_year}"
+
+                start_dt = datetime.strptime(start_dt_str, "%d %b %Y")
+                end_dt = datetime.strptime(end_dt_str, "%d %b %Y")
+
+                return start_dt.strftime("%Y-%m-%d"), end_dt.strftime("%Y-%m-%d")
+
+        # Case: "20 Feb" (Single date, maybe listing or just open)
+        else:
+             dt = datetime.strptime(f"{date_str} {current_year}", "%d %b %Y")
+             return dt.strftime("%Y-%m-%d"), dt.strftime("%Y-%m-%d")
+
+    except Exception as e:
+        print(f"Date parse error for '{date_str}': {e}")
+        return None, None
+
+    return None, None
+
 def scrape_ipowatch():
     print("Starting Playwright scraper for ipowatch.in...")
 
@@ -35,7 +75,6 @@ def scrape_ipowatch():
             page.wait_for_selector("table", timeout=20000)
 
             # Find the main data table
-            # Usually the first table on this page
             rows = page.locator("table tbody tr").all()
             print(f"Found {len(rows)} rows.")
 
@@ -48,58 +87,59 @@ def scrape_ipowatch():
 
                 texts = [c.inner_text().strip() for c in cells]
 
-                # IPOWatch Headers: Stock / IPO | GMP | Price | Gain | Date | Type
-                # Note: First row might be header
+                # Headers check
                 if "Stock" in texts[0] or "IPO" in texts[0]:
                     continue
+
+                # Mapping based on observation:
+                # 0: Name (e.g., "Fractal Analytics")
+                # 1: GMP (e.g., "₹42")
+                # 2: IPO Price (e.g., "₹900")
+                # 3: Gain (e.g., "4.66%") - Skip
+                # 4: Date (e.g., "9-11 Feb")
+                # 5: Type (e.g., "Mainboard" or "SME")
 
                 ipo_name = texts[0]
                 gmp_str = texts[1]
                 price_str = texts[2]
-                date_str = texts[4] # e.g. "20-Feb" or "20-22 Feb"
-                ipo_type = texts[5] if len(texts) > 5 else "Mainboard"
+                # gain_str = texts[3]
+                date_str = texts[4]
+                ipo_type_raw = texts[5] if len(texts) > 5 else "Mainboard"
 
                 # Parse Dates
-                open_date = None
-                close_date = None
-                try:
-                    current_year = datetime.now().year
-                    if "-" in date_str:
-                        parts = date_str.split("-")
-                        if len(parts) == 2:
-                            # E.g. "20-22 Feb"
-                            start_day = parts[0].strip()
-                            end_part = parts[1].strip() # "22 Feb"
+                open_date, close_date = parse_ipo_date(date_str)
 
-                            # Parse end part
-                            end_dt = datetime.strptime(f"{end_part} {current_year}", "%d %b %Y")
-                            close_date = end_dt.strftime("%Y-%m-%d")
+                # Determine Status
+                # Logic:
+                # If no GMP ("--" or "-"), maybe Closed or Upcoming (inactive).
+                # If dates are in future -> Upcoming
+                # If dates are current -> Open
+                # If dates are past -> Closed
 
-                            # Parse start part (needs month from end_part if missing)
-                            month_str = end_part.split(" ")[-1]
-                            start_dt = datetime.strptime(f"{start_day} {month_str} {current_year}", "%d %b %Y")
-                            open_date = start_dt.strftime("%Y-%m-%d")
-
-                    else:
-                         # Single date or unknown
-                         pass
-                except Exception:
-                    # Keep as string or null if parsing fails
-                    open_date = date_str
-                    close_date = date_str
-
-                # Determine status based on name or GMP presence
-                # If GMP is "--", it might be inactive
                 status = "Upcoming"
-                if gmp_str == "--" or gmp_str == "-":
-                    # Maybe closed or too early
-                    pass
+                if open_date and close_date:
+                    today = datetime.now().strftime("%Y-%m-%d")
+                    if today >= open_date and today <= close_date:
+                        status = "Open"
+                    elif today > close_date:
+                        status = "Closed"
+                    else:
+                        status = "Upcoming"
+                elif gmp_str in ["--", "-"]:
+                     # Fallback if no dates but inactive GMP
+                     status = "Upcoming"
 
-                # Try to parse GMP
+                # Parse Values
                 gmp_value = clean_currency(gmp_str)
+                base_price = clean_currency(price_str)
+
+                # Growth Percent Calculation
+                growth_percent = 0.0
+                if base_price > 0:
+                    growth_percent = round((gmp_value / base_price) * 100, 2)
 
                 # Normalize Type
-                if "SME" in ipo_type:
+                if "SME" in ipo_type_raw:
                     normalized_type = "SME"
                 else:
                     normalized_type = "Mainboard"
@@ -115,7 +155,7 @@ def scrape_ipowatch():
                         status=status,
                         open_date=open_date,
                         close_date=close_date,
-                        lot_size=0
+                        lot_size=0 # Default, will need detail scrape for this
                     )
                     session.add(new_ipo)
                     session.commit()
@@ -126,6 +166,8 @@ def scrape_ipowatch():
                     existing.price_band = price_str
                     existing.open_date = open_date
                     existing.close_date = close_date
+                    existing.status = status # Update status dynamically
+                    existing.ipo_type = normalized_type
                     session.commit()
 
                 # Add GMP Entry

@@ -1,10 +1,13 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Bell, Settings, Grid3X3, Filter, Calendar, FileText, Monitor, CheckCircle, AlertCircle, Moon, Sun } from "lucide-react";
+import { Search, Bell, Settings, Grid3X3, Filter, Calendar, FileText, Monitor, CheckCircle, Moon, Sun, MessageSquare } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { useTheme } from "next-themes";
 import Link from 'next/link';
+import { Button } from "@/components/ui/button";
+import { PredictorModal } from "@/components/predictor-modal";
+import { AuthButton } from "@/components/auth-button";
 
 // --- COMPONENTS ---
 
@@ -13,20 +16,11 @@ function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
   if (!mounted) {
-    // Return a placeholder or null to avoid hydration mismatch,
-    // but without blocking the render logic that depends on `mounted` state change.
-    // The lint error is about synchronous state update in effect, which isn't happening here (it's in callback)
-    // The previous error was: "Calling setState synchronously within an effect".
-    // Wait, useEffect callback IS synchronous execution after render.
-    // However, setMounted(true) inside useEffect([]) is standard pattern for next-themes.
-    // Let's try to suppress it or ignore if it's a false positive from strict config,
-    // OR just return null.
-    return <div className="w-9 h-9" />; // Placeholder to avoid layout shift
+    return <div className="w-9 h-9" />;
   }
 
   return (
@@ -55,16 +49,14 @@ function MarketTicker() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const res = await axios.get(`${API_URL}/market-indices`);
-        setData(res.data);
-      } catch (error) {
-        console.error("Failed to fetch market data", error);
-        // Fallback data
+        // In a real app, this would come from the backend or a finance API
+        // Simulating data for now as per requirements
         setData([
             { name: "NIFTY 50", price: 22000, percent: 0.5, is_positive: true },
             { name: "SENSEX", price: 73000, percent: 0.4, is_positive: true }
         ]);
+      } catch (error) {
+        console.error("Failed to fetch market data", error);
       } finally {
         setLoading(false);
       }
@@ -73,7 +65,7 @@ function MarketTicker() {
   }, []);
 
   return (
-    <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800 text-xs py-2 overflow-hidden flex items-center h-10">
+    <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800 text-xs py-2 overflow-hidden flex items-center h-10 w-full z-40 relative">
       <div className="whitespace-nowrap flex animate-marquee space-x-8 px-4 w-full">
          {data.map((item, idx) => (
             <div key={idx} className="flex items-center space-x-2">
@@ -86,7 +78,7 @@ function MarketTicker() {
               </span>
             </div>
           ))}
-          {/* Static Nifty 50 Stocks Example */}
+          {/* Static Stock Examples */}
            <div className="flex items-center space-x-2">
             <span className="font-bold text-gray-900 dark:text-gray-100">RELIANCE</span>
             <span className="text-green-600 dark:text-green-400">2,980.00 <span className="text-[10px]">+1.2%</span></span>
@@ -120,9 +112,9 @@ function TopBar({ onSearch }: { onSearch: (val: string) => void }) {
          <div className="flex items-center min-w-0">
             <Link href="/" className="text-xl font-bold tracking-tighter text-gray-900 dark:text-white flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/30">
-                M
+                ITP
               </div>
-              <span className="hidden sm:inline">MARKETPULSE <span className="text-xs font-normal text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded-full ml-1">V2.1</span></span>
+              <span className="hidden sm:inline">IPO Tracker Pro</span>
             </Link>
          </div>
 
@@ -134,7 +126,7 @@ function TopBar({ onSearch }: { onSearch: (val: string) => void }) {
               <input
                 type="text"
                 className="block w-full pl-10 pr-12 py-2 border border-gray-200 dark:border-gray-700 rounded-lg leading-5 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all sm:text-sm"
-                placeholder="EXECUTE_CMD: search_ticker..."
+                placeholder="Search ticker..."
                 onChange={(e) => onSearch(e.target.value)}
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -144,7 +136,6 @@ function TopBar({ onSearch }: { onSearch: (val: string) => void }) {
          </div>
 
          <div className="flex items-center space-x-1 sm:space-x-3">
-           <ThemeToggle />
            <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors hidden sm:block">
              <Settings className="h-5 w-5" />
            </button>
@@ -155,6 +146,8 @@ function TopBar({ onSearch }: { onSearch: (val: string) => void }) {
              <Bell className="h-5 w-5" />
              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full border border-white dark:border-slate-900"></span>
            </button>
+           <ThemeToggle />
+           <AuthButton />
          </div>
        </div>
        <MarketTicker />
@@ -168,7 +161,21 @@ interface FilterState {
   gmpRange: string;
 }
 
-function Filters({ onFilterChange }: { onFilterChange: (f: FilterState) => void }) {
+interface IPO {
+  id: number;
+  name: string;
+  symbol: string;
+  gmp: number;
+  growth_percent: number;
+  listing_date: string;
+  base_price: number;
+  status: string;
+  trend: { price: number; date: string }[];
+  price_band: string;
+  type: string;
+}
+
+function Sidebar({ onFilterChange, ipos }: { onFilterChange: (f: FilterState) => void, ipos: IPO[] }) {
   const [activeFilters, setActiveFilters] = useState<FilterState>({ type: "All", status: "All", gmpRange: "All" });
 
   const updateFilter = (k: keyof FilterState, v: string) => {
@@ -188,9 +195,19 @@ function Filters({ onFilterChange }: { onFilterChange: (f: FilterState) => void 
             <div className="grid grid-cols-2 gap-3">
                 {[
                     { icon: FileText, label: "IPO DOCS", color: "text-blue-500" },
-                    { icon: Monitor, label: "CALC GMP", color: "text-purple-500" },
+                ].map((item, i) => (
+                    <button key={i} className="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-slate-800 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-600 group">
+                        <item.icon className={`h-5 w-5 mb-2 ${item.color} group-hover:scale-110 transition-transform`} />
+                        <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300">{item.label}</span>
+                    </button>
+                ))}
+
+                {/* PREDICTOR MODAL TRIGGER */}
+                <PredictorModal ipos={ipos} />
+
+                {[
                     { icon: Calendar, label: "CALENDAR", color: "text-orange-500" },
-                    { icon: AlertCircle, label: "FORUM", color: "text-pink-500" },
+                    { icon: MessageSquare, label: "FORUM", color: "text-pink-500" },
                 ].map((item, i) => (
                     <button key={i} className="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-slate-800 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-600 group">
                         <item.icon className={`h-5 w-5 mb-2 ${item.color} group-hover:scale-110 transition-transform`} />
@@ -271,20 +288,6 @@ function Filters({ onFilterChange }: { onFilterChange: (f: FilterState) => void 
   );
 }
 
-interface IPO {
-  id: number;
-  name: string;
-  symbol: string;
-  gmp: number;
-  growth_percent: number;
-  listing_date: string;
-  base_price: number;
-  status: string;
-  trend: { price: number; date: string }[];
-  price_band: string;
-  type: string;
-}
-
 function IPOTable({ data }: { data: IPO[] }) {
     if (!data || data.length === 0) {
         return <div className="p-10 text-center text-gray-500 dark:text-gray-400">No IPOs found matching your criteria.</div>
@@ -315,7 +318,7 @@ function IPOTable({ data }: { data: IPO[] }) {
                                         </div>
                                         <div>
                                             <div className="font-bold text-gray-900 dark:text-gray-100">{ipo.name}</div>
-                                            <div className="text-[10px] text-gray-500 font-mono uppercase tracking-wide">{ipo.type}.MB</div>
+                                            <div className="text-[10px] text-gray-500 font-mono uppercase tracking-wide">{ipo.type === "SME" ? "SME" : "MAINBOARD"}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -417,18 +420,20 @@ export default function Home() {
   }, [ipos, searchQuery, filters]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 pt-28 pb-10 transition-colors duration-300">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 bg-grid-dots transition-colors duration-300 pt-28 pb-10">
         <TopBar onSearch={setSearchQuery} />
 
         <div className="flex max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 gap-8">
             <main className="flex-1 min-w-0">
-                <div className="mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        Realtime Feed
-                        <span className="text-xs font-normal text-gray-500 bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">Live Sync Active</span>
-                    </h1>
-                    <div className="text-xs font-mono text-gray-500 mt-1 uppercase tracking-wide">
-                        {filteredIpos.length} IPOs Listed • Updated Just Now
+                <div className="mb-6 flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            Realtime Feed
+                            <span className="text-xs font-normal text-gray-500 bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">Live Sync Active</span>
+                        </h1>
+                        <div className="text-xs font-mono text-gray-500 mt-1 uppercase tracking-wide">
+                            {filteredIpos.length} IPOs Listed • Updated Just Now
+                        </div>
                     </div>
                 </div>
 
@@ -441,7 +446,7 @@ export default function Home() {
                 )}
             </main>
 
-            <Filters onFilterChange={setFilters} />
+            <Sidebar onFilterChange={setFilters} ipos={ipos} />
         </div>
     </div>
   );

@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
 import os
 
@@ -21,7 +21,7 @@ class IPO(Base):
 
     # Financials
     price_band = Column(String, nullable=True)
-    lot_size = Column(Integer, nullable=True)
+    lot_size = Column(Integer, nullable=True, default=0)
     issue_size = Column(String, nullable=True)
 
     # Status
@@ -50,15 +50,10 @@ class MarketIndex(Base):
     last_updated = Column(DateTime, default=datetime.utcnow)
 
 # Database Setup
-# Use environment variable for DB connection, default to SQLite
-# If running from backend directory, path should be ./ipo_tracker.db
-# If running from root, path should be ./backend/ipo_tracker.db
-# We can use absolute path to be safe
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "ipo_tracker.db")
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DB_PATH}")
 
-# Fix for Render/Supabase which might provide 'postgres://' but SQLAlchemy needs 'postgresql://'
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
@@ -67,3 +62,4 @@ if "sqlite" in DATABASE_URL:
     connect_args = {"check_same_thread": False}
 
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
+Session = sessionmaker(bind=engine)
