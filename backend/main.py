@@ -4,9 +4,11 @@ from sqlalchemy.orm import Session
 from apscheduler.schedulers.background import BackgroundScheduler
 from models import engine, Base, Session as DBSession, IPO, GMPPrice, MarketIndex
 import uvicorn
-import scraper
 import datetime
 from pydantic import BaseModel
+
+# Import Merger Service
+from services.ipo_merger import IPOMergerService
 
 # Initialize DB
 Base.metadata.create_all(bind=engine)
@@ -28,8 +30,20 @@ def update_market_indices():
     # For now, we mock or use existing logic if any
     pass
 
+def scrape_job():
+    print("Running scheduled scrape...")
+    session = DBSession()
+    try:
+        service = IPOMergerService(session)
+        service.scrape_and_merge()
+    except Exception as e:
+        print(f"Scrape Job Failed: {e}")
+    finally:
+        session.close()
+
 scheduler = BackgroundScheduler()
-scheduler.add_job(scraper.scrape_ipowatch, 'interval', hours=1)
+# Schedule every hour
+scheduler.add_job(scrape_job, 'interval', hours=1)
 scheduler.start()
 
 # --- ROUTES ---
@@ -117,8 +131,6 @@ def predict_profit(req: ProfitRequest):
         gmp_val = latest_gmp.price if latest_gmp else 0.0
 
         # Try to determine lot size
-        # If scraper didn't get it (it's 0), we use a default or try to guess from description if available
-        # For now, we'll assume a standard Mainboard lot size of roughly ₹15,000 worth of shares if price is known, or just 1 share if unknown
         lot_size = ipo.lot_size
 
         # Heuristic for lot size if 0
@@ -162,9 +174,6 @@ def predict_allotment(req: AllotmentRequest):
         ipo = session.query(IPO).filter(IPO.id == req.ipo_id).first()
         if not ipo:
             raise HTTPException(status_code=404, detail="IPO not found")
-
-        # Simplified logic since we don't have real-time subscription data scraping yet
-        # We will infer probability from GMP demand. High GMP -> High Oversubscription -> Low Chance
 
         latest_gmp = session.query(GMPPrice).filter(GMPPrice.ipo_id == ipo.id).order_by(GMPPrice.updated_at.desc()).first()
         gmp_val = latest_gmp.price if latest_gmp else 0.0
@@ -211,8 +220,8 @@ def predict_allotment(req: AllotmentRequest):
 
 @app.on_event("startup")
 def startup_event():
-    # Trigger a scrape on startup in background
-    pass
+    # Trigger a scrape shortly after startup
+    scheduler.add_job(scrape_job, 'date', run_date=datetime.datetime.now() + datetime.timedelta(seconds=5))
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
