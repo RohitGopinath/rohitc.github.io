@@ -1,13 +1,15 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Bell, Settings, Grid3X3, Filter, Calendar, FileText, Monitor, CheckCircle, Moon, Sun, MessageSquare } from "lucide-react";
-import { LineChart, Line, ResponsiveContainer } from "recharts";
+import { Search, Bell, Settings, Grid3X3, Filter, Calendar, FileText, Monitor, CheckCircle, Moon, Sun, MessageSquare, ChevronUp, ChevronDown } from "lucide-react";
+import { LineChart, Line, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis } from "recharts";
 import { useTheme } from "next-themes";
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { PredictorModal } from "@/components/predictor-modal";
 import { AuthButton } from "@/components/auth-button";
+import { IPODrawer } from "@/components/ipo-drawer";
+import { ProfitCalculator, AllotmentProbability, SentimentVoting } from "@/components/detail-components";
 
 // --- COMPONENTS ---
 
@@ -49,12 +51,9 @@ function MarketTicker() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // In a real app, this would come from the backend or a finance API
-        // Simulating data for now as per requirements
-        setData([
-            { name: "NIFTY 50", price: 22000, percent: 0.5, is_positive: true },
-            { name: "SENSEX", price: 73000, percent: 0.4, is_positive: true }
-        ]);
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await axios.get(`${API_URL}/market-indices`);
+        setData(res.data);
       } catch (error) {
         console.error("Failed to fetch market data", error);
       } finally {
@@ -62,6 +61,8 @@ function MarketTicker() {
       }
     }
     fetchData();
+    const interval = setInterval(fetchData, 60000); // Update every minute
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -71,26 +72,13 @@ function MarketTicker() {
             <div key={idx} className="flex items-center space-x-2">
               <span className="font-bold text-gray-900 dark:text-gray-100 uppercase">{item.name}</span>
               <span className={`flex items-center ${item.is_positive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                {item.price.toLocaleString("en-IN")}
+                {item.price.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                 <span className="ml-1 text-[10px] bg-gray-100 dark:bg-slate-800 px-1 rounded font-mono">
                   {item.is_positive ? "+" : ""}{item.percent}%
                 </span>
               </span>
             </div>
           ))}
-          {/* Static Stock Examples */}
-           <div className="flex items-center space-x-2">
-            <span className="font-bold text-gray-900 dark:text-gray-100">RELIANCE</span>
-            <span className="text-green-600 dark:text-green-400">2,980.00 <span className="text-[10px]">+1.2%</span></span>
-        </div>
-        <div className="flex items-center space-x-2">
-            <span className="font-bold text-gray-900 dark:text-gray-100">TCS</span>
-            <span className="text-red-600 dark:text-red-400">3,450.00 <span className="text-[10px]">-0.5%</span></span>
-        </div>
-        <div className="flex items-center space-x-2">
-            <span className="font-bold text-gray-900 dark:text-gray-100">HDFCBANK</span>
-            <span className="text-green-600 dark:text-green-400">1,650.00 <span className="text-[10px]">+0.8%</span></span>
-        </div>
       </div>
       <style jsx>{`
         .animate-marquee {
@@ -173,6 +161,17 @@ interface IPO {
   trend: { price: number; date: string }[];
   price_band: string;
   type: string;
+  lot_size: number;
+  kostak_rate: number;
+  retail_subscription_x: number;
+  allotment_url?: string;
+  sentiment_bullish: number;
+  sentiment_bearish: number;
+}
+
+interface SortConfig {
+  key: string;
+  direction: 'asc' | 'desc';
 }
 
 function Sidebar({ onFilterChange, ipos }: { onFilterChange: (f: FilterState) => void, ipos: IPO[] }) {
@@ -288,88 +287,127 @@ function Sidebar({ onFilterChange, ipos }: { onFilterChange: (f: FilterState) =>
   );
 }
 
-function IPOTable({ data }: { data: IPO[] }) {
+interface IPOTableProps {
+    data: IPO[];
+    sortConfig: SortConfig;
+    onSort: (key: string) => void;
+    onRowClick: (ipo: IPO) => void;
+}
+
+function IPOTable({ data, sortConfig, onSort, onRowClick }: IPOTableProps) {
     if (!data || data.length === 0) {
         return <div className="p-10 text-center text-gray-500 dark:text-gray-400">No IPOs found matching your criteria.</div>
     }
 
-    return (
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden transition-colors duration-300">
-            <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                    <thead>
-                        <tr className="bg-gray-50 dark:bg-slate-950/50 border-b border-gray-200 dark:border-gray-800 text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-mono">
-                            <th className="px-6 py-4 font-semibold">Symbol / Name</th>
-                            <th className="px-6 py-4 font-semibold">GMP Prem</th>
-                            <th className="px-6 py-4 font-semibold">Growth (%)</th>
-                            <th className="px-6 py-4 font-semibold hidden md:table-cell">Listing Date</th>
-                            <th className="px-6 py-4 font-semibold hidden sm:table-cell">Base Price</th>
-                            <th className="px-6 py-4 font-semibold">Status</th>
-                            <th className="px-6 py-4 font-semibold hidden lg:table-cell text-right pr-8">Trend</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50 text-sm">
-                        {data.map((ipo) => (
-                            <tr key={ipo.id} className="group hover:bg-blue-50/50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-lg font-bold text-gray-700 dark:text-gray-300 shadow-sm border border-gray-200 dark:border-gray-700">
-                                            {ipo.symbol ? ipo.symbol[0] : ipo.name[0]}
-                                        </div>
-                                        <div>
-                                            <div className="font-bold text-gray-900 dark:text-gray-100">{ipo.name}</div>
-                                            <div className="text-[10px] text-gray-500 font-mono uppercase tracking-wide">{ipo.type === "SME" ? "SME" : "MAINBOARD"}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 font-mono">
-                                    <span className={`font-bold ${ipo.gmp > 0 ? "text-green-600 dark:text-green-400" : "text-gray-500"}`}>
-                                        ₹{ipo.gmp.toLocaleString("en-IN")}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 font-mono">
-                                     <span className={`font-bold ${ipo.growth_percent > 0 ? "text-green-600 dark:text-green-400" : "text-gray-500"}`}>
-                                        {ipo.growth_percent > 0 ? "+" : ""}{ipo.growth_percent}%
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 hidden md:table-cell font-mono text-gray-600 dark:text-gray-400 text-xs">
-                                    {ipo.listing_date || "TBA"}
-                                </td>
-                                <td className="px-6 py-4 hidden sm:table-cell font-mono text-gray-600 dark:text-gray-400">
-                                    {ipo.base_price > 0 ? `₹${ipo.base_price}` : ipo.price_band || "--"}
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${
-                                        ipo.status === "Open" ? "bg-green-500/10 text-green-600 border-green-500/20" :
-                                        ipo.status === "Closed" ? "bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-800 dark:text-gray-400 dark:border-slate-700" :
-                                        "bg-blue-500/10 text-blue-600 border-blue-500/20"
-                                    }`}>
-                                        {ipo.status === "Open" && <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>}
-                                        {ipo.status}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 hidden lg:table-cell pr-8">
-                                    <div className="h-8 w-24 ml-auto">
-                                        {ipo.trend && ipo.trend.length > 1 ? (
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <LineChart data={ipo.trend}>
-                                                    <Line type="monotone" dataKey="price" stroke={ipo.growth_percent >= 0 ? "#10b981" : "#ef4444"} strokeWidth={2} dot={false} />
-                                                </LineChart>
-                                            </ResponsiveContainer>
-                                        ) : (
-                                            <div className="flex justify-end gap-1 opacity-20">
-                                                <div className="w-1 h-3 bg-current rounded-full"></div>
-                                                <div className="w-1 h-2 bg-current rounded-full"></div>
-                                                <div className="w-1 h-4 bg-current rounded-full"></div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+    const SortIcon = ({ column }: { column: string }) => {
+        if (sortConfig.key !== column) return null;
+        return sortConfig.direction === 'asc' ? <ChevronUp className="h-3 w-3 inline ml-1" /> : <ChevronDown className="h-3 w-3 inline ml-1" />;
+    };
+
+    const Header = ({ label, column, className = "" }: { label: string, column?: string, className?: string }) => (
+        <div
+            className={`font-mono text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider ${column ? 'cursor-pointer select-none hover:text-gray-800 dark:hover:text-gray-200' : ''} ${className}`}
+            onClick={() => column && onSort(column)}
+        >
+            <div className={`flex items-center gap-1 ${className.includes('text-right') ? 'justify-end' : ''}`}>
+                {label} {column && <SortIcon column={column} />}
             </div>
+        </div>
+    );
+
+    return (
+        <div className="flex flex-col gap-2">
+            {/* Table Header (Desktop Only) */}
+            <div className="hidden md:grid md:grid-cols-6 gap-4 px-4 py-2 border-b border-gray-200 dark:border-gray-800 mb-2">
+                <Header label="Ticker" column="name" />
+                <Header label="GMP" column="gmp" />
+                <Header label="Trend" />
+                <Header label="Subscription" column="retail_subscription_x" />
+                <Header label="Status" column="status" />
+                <Header label="Action" className="text-right" />
+            </div>
+
+            {data.map((ipo) => (
+                <div
+                    key={ipo.id}
+                    onClick={() => onRowClick(ipo)}
+                    className="relative bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden cursor-pointer hover:border-blue-500 dark:hover:border-blue-500 transition-all md:grid md:grid-cols-6 items-center"
+                >
+                    {/* Status Strip */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                        ipo.status === "Open" ? "bg-emerald-500" :
+                        ipo.status.includes("Allotment") ? "bg-amber-500" :
+                        "bg-gray-300 dark:bg-slate-700"
+                    }`}></div>
+
+                    {/* Column 1: Ticker */}
+                    <div className="p-4 pl-6 md:p-3 md:pl-6 flex flex-col justify-center">
+                        <div className="font-bold text-gray-900 dark:text-white truncate">{ipo.symbol || ipo.name}</div>
+                        <div className="text-[10px] text-slate-500 uppercase font-mono mt-0.5">
+                            {ipo.type === "SME" ? "SME" : "MAIN"} • {ipo.name}
+                        </div>
+                    </div>
+
+                    {/* Column 2: GMP (Hero) */}
+                    <div className="p-4 md:p-3 flex flex-row md:flex-col justify-between md:justify-center items-center md:items-start border-t md:border-t-0 border-gray-100 dark:border-gray-800">
+                        <span className="md:hidden text-xs text-gray-500 font-mono">GMP</span>
+                        <div className={`font-mono text-lg font-bold ${ipo.gmp >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                            ₹{ipo.gmp}
+                        </div>
+                        {ipo.growth_percent !== 0 && (
+                            <div className={`text-[10px] font-mono ${ipo.growth_percent > 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                                {ipo.growth_percent > 0 ? "+" : ""}{ipo.growth_percent}%
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Column 3: Trend (Sparkline) */}
+                    <div className="p-4 md:p-3 h-16 md:h-full flex items-center justify-center md:justify-start border-t md:border-t-0 border-gray-100 dark:border-gray-800">
+                        <div className="h-8 w-24">
+                            {ipo.trend && ipo.trend.length > 1 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={ipo.trend}>
+                                        <Line
+                                            type="monotone"
+                                            dataKey="price"
+                                            stroke={ipo.growth_percent >= 0 ? "#10b981" : "#f43f5e"}
+                                            strokeWidth={2}
+                                            dot={false}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="text-[10px] text-gray-400">No Data</div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Column 4: Subscription (Hidden Mobile) */}
+                    <div className="hidden md:flex p-3 items-center">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                            {ipo.retail_subscription_x > 0 ? `${ipo.retail_subscription_x}x Retail` : "N/A"}
+                        </span>
+                    </div>
+
+                    {/* Column 5: Status (Hidden Mobile) */}
+                    <div className="hidden md:flex p-3 items-center">
+                        <span className={`text-xs font-bold uppercase tracking-wider ${
+                            ipo.status === "Open" ? "text-emerald-500" :
+                            ipo.status.includes("Allotment") ? "text-amber-500" :
+                            "text-gray-500"
+                        }`}>
+                            {ipo.status}
+                        </span>
+                    </div>
+
+                    {/* Column 6: Action (Hidden Mobile) */}
+                    <div className="hidden md:flex p-3 justify-end items-center pr-6">
+                        <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-500">
+                            Analyze &gt;
+                        </Button>
+                    </div>
+                </div>
+            ))}
         </div>
     );
 }
@@ -382,6 +420,16 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<FilterState>({ type: "All", status: "All", gmpRange: "All" });
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: "listing_date", direction: "desc" });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [selectedIPO, setSelectedIPO] = useState<IPO | null>(null);
+
+  const handleSort = (key: string) => {
+      setSortConfig(current => ({
+          key,
+          direction: current.key === key && current.direction === 'desc' ? 'asc' : 'desc'
+      }));
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -416,8 +464,31 @@ export default function Home() {
           if (min > 0) res = res.filter(i => i.growth_percent >= min);
       }
 
-      setFilteredIpos(res);
-  }, [ipos, searchQuery, filters]);
+      // Sort
+      if (sortConfig.key) {
+        res.sort((a, b) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let aVal = (a as any)[sortConfig.key];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let bVal = (b as any)[sortConfig.key];
+
+            // Handle Dates (assume string ISO or "TBA")
+            if (sortConfig.key === 'listing_date') {
+                if (!aVal) aVal = "0000-00-00";
+                if (!bVal) bVal = "0000-00-00";
+                // If it is 'TBA' put it at the end for desc, start for asc?
+                if (aVal === 'TBA') aVal = '9999-99-99';
+                if (bVal === 'TBA') bVal = '9999-99-99';
+            }
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+      }
+
+      setFilteredIpos([...res]); // Spread to trigger re-render
+  }, [ipos, searchQuery, filters, sortConfig]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 bg-grid-dots transition-colors duration-300 pt-28 pb-10">
@@ -442,12 +513,29 @@ export default function Home() {
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
                 ) : (
-                    <IPOTable data={filteredIpos} />
+                    <IPOTable
+                        data={filteredIpos}
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                        onRowClick={(ipo) => setSelectedIPO(ipo)}
+                    />
                 )}
             </main>
 
             <Sidebar onFilterChange={setFilters} ipos={ipos} />
         </div>
+
+        {selectedIPO && (
+            <IPODrawer open={!!selectedIPO} onOpenChange={(open) => !open && setSelectedIPO(null)} title={selectedIPO.name}>
+                <div className="space-y-6 pb-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <ProfitCalculator ipo={selectedIPO} />
+                        <AllotmentProbability ipo={selectedIPO} />
+                    </div>
+                    <SentimentVoting ipo={selectedIPO} />
+                </div>
+            </IPODrawer>
+        )}
     </div>
   );
 }
