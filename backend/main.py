@@ -103,7 +103,13 @@ def get_ipos():
                 "status": ipo.status,
                 "price_band": ipo.price_band,
                 "type": ipo.ipo_type,
-                "trend": trend_data
+                "trend": trend_data,
+                "lot_size": ipo.lot_size,
+                "kostak_rate": ipo.kostak_rate,
+                "retail_subscription_x": ipo.retail_subscription_x,
+                "allotment_url": ipo.allotment_url,
+                "sentiment_bullish": ipo.sentiment_bullish,
+                "sentiment_bearish": ipo.sentiment_bearish
             })
         return result
     finally:
@@ -192,6 +198,33 @@ class AllotmentRequest(BaseModel):
     ipo_id: int
     category: str # "RII", "HNI"
     lots_applied: int
+
+class VoteRequest(BaseModel):
+    vote_type: str # "bullish" | "bearish"
+
+@app.post("/ipos/{ipo_id}/vote")
+def vote_sentiment(ipo_id: int, req: VoteRequest):
+    session = DBSession()
+    try:
+        ipo = session.query(IPO).filter(IPO.id == ipo_id).first()
+        if not ipo:
+            raise HTTPException(status_code=404, detail="IPO not found")
+
+        if req.vote_type == "bullish":
+            ipo.sentiment_bullish += 1
+        elif req.vote_type == "bearish":
+            ipo.sentiment_bearish += 1
+        else:
+            raise HTTPException(status_code=400, detail="Invalid vote type")
+
+        session.commit()
+        return {
+            "status": "success",
+            "bullish": ipo.sentiment_bullish,
+            "bearish": ipo.sentiment_bearish
+        }
+    finally:
+        session.close()
 
 @app.post("/predict/allotment")
 def predict_allotment(req: AllotmentRequest):

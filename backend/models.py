@@ -27,6 +27,15 @@ class IPO(Base):
     # Status
     status = Column(String, default="Upcoming") # Upcoming, Open, Closed
 
+    # New Fields for Dense Table
+    kostak_rate = Column(Float, default=0.0)
+    retail_subscription_x = Column(Float, default=0.0)
+    allotment_url = Column(String, nullable=True)
+
+    # Sentiment Voting
+    sentiment_bullish = Column(Integer, default=0)
+    sentiment_bearish = Column(Integer, default=0)
+
     # Relationships
     gmp_prices = relationship("GMPPrice", back_populates="ipo", cascade="all, delete-orphan")
 
