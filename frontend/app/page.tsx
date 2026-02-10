@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Bell, Settings, Grid3X3, Filter, Calendar, FileText, Monitor, CheckCircle, Moon, Sun, MessageSquare } from "lucide-react";
-import { LineChart, Line, ResponsiveContainer } from "recharts";
+import { Search, Bell, Settings, Grid3X3, Filter, Calendar, FileText, Monitor, CheckCircle, Moon, Sun, MessageSquare, ChevronUp, ChevronDown } from "lucide-react";
+import { BarChart, Bar, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis } from "recharts";
 import { useTheme } from "next-themes";
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
@@ -49,12 +49,9 @@ function MarketTicker() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // In a real app, this would come from the backend or a finance API
-        // Simulating data for now as per requirements
-        setData([
-            { name: "NIFTY 50", price: 22000, percent: 0.5, is_positive: true },
-            { name: "SENSEX", price: 73000, percent: 0.4, is_positive: true }
-        ]);
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await axios.get(`${API_URL}/market-indices`);
+        setData(res.data);
       } catch (error) {
         console.error("Failed to fetch market data", error);
       } finally {
@@ -62,6 +59,8 @@ function MarketTicker() {
       }
     }
     fetchData();
+    const interval = setInterval(fetchData, 60000); // Update every minute
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -71,26 +70,13 @@ function MarketTicker() {
             <div key={idx} className="flex items-center space-x-2">
               <span className="font-bold text-gray-900 dark:text-gray-100 uppercase">{item.name}</span>
               <span className={`flex items-center ${item.is_positive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                {item.price.toLocaleString("en-IN")}
+                {item.price.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                 <span className="ml-1 text-[10px] bg-gray-100 dark:bg-slate-800 px-1 rounded font-mono">
                   {item.is_positive ? "+" : ""}{item.percent}%
                 </span>
               </span>
             </div>
           ))}
-          {/* Static Stock Examples */}
-           <div className="flex items-center space-x-2">
-            <span className="font-bold text-gray-900 dark:text-gray-100">RELIANCE</span>
-            <span className="text-green-600 dark:text-green-400">2,980.00 <span className="text-[10px]">+1.2%</span></span>
-        </div>
-        <div className="flex items-center space-x-2">
-            <span className="font-bold text-gray-900 dark:text-gray-100">TCS</span>
-            <span className="text-red-600 dark:text-red-400">3,450.00 <span className="text-[10px]">-0.5%</span></span>
-        </div>
-        <div className="flex items-center space-x-2">
-            <span className="font-bold text-gray-900 dark:text-gray-100">HDFCBANK</span>
-            <span className="text-green-600 dark:text-green-400">1,650.00 <span className="text-[10px]">+0.8%</span></span>
-        </div>
       </div>
       <style jsx>{`
         .animate-marquee {
@@ -173,6 +159,11 @@ interface IPO {
   trend: { price: number; date: string }[];
   price_band: string;
   type: string;
+}
+
+interface SortConfig {
+  key: string;
+  direction: 'asc' | 'desc';
 }
 
 function Sidebar({ onFilterChange, ipos }: { onFilterChange: (f: FilterState) => void, ipos: IPO[] }) {
@@ -288,10 +279,26 @@ function Sidebar({ onFilterChange, ipos }: { onFilterChange: (f: FilterState) =>
   );
 }
 
-function IPOTable({ data }: { data: IPO[] }) {
+function IPOTable({ data, sortConfig, onSort }: { data: IPO[], sortConfig: SortConfig, onSort: (key: string) => void }) {
     if (!data || data.length === 0) {
         return <div className="p-10 text-center text-gray-500 dark:text-gray-400">No IPOs found matching your criteria.</div>
     }
+
+    const SortIcon = ({ column }: { column: string }) => {
+        if (sortConfig.key !== column) return null;
+        return sortConfig.direction === 'asc' ? <ChevronUp className="h-3 w-3 inline ml-1" /> : <ChevronDown className="h-3 w-3 inline ml-1" />;
+    };
+
+    const Header = ({ label, column, className = "" }: { label: string, column: string, className?: string }) => (
+        <th
+            className={`px-6 py-4 font-semibold cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors ${className}`}
+            onClick={() => onSort(column)}
+        >
+            <div className={`flex items-center gap-1 ${className.includes('text-right') ? 'justify-end' : ''}`}>
+                {label} <SortIcon column={column} />
+            </div>
+        </th>
+    );
 
     return (
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden transition-colors duration-300">
@@ -300,11 +307,11 @@ function IPOTable({ data }: { data: IPO[] }) {
                     <thead>
                         <tr className="bg-gray-50 dark:bg-slate-950/50 border-b border-gray-200 dark:border-gray-800 text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-mono">
                             <th className="px-6 py-4 font-semibold">Symbol / Name</th>
-                            <th className="px-6 py-4 font-semibold">GMP Prem</th>
-                            <th className="px-6 py-4 font-semibold">Growth (%)</th>
-                            <th className="px-6 py-4 font-semibold hidden md:table-cell">Listing Date</th>
-                            <th className="px-6 py-4 font-semibold hidden sm:table-cell">Base Price</th>
-                            <th className="px-6 py-4 font-semibold">Status</th>
+                            <Header label="GMP Prem" column="gmp" />
+                            <Header label="Growth (%)" column="growth_percent" />
+                            <Header label="Listing Date" column="listing_date" className="hidden md:table-cell" />
+                            <Header label="Base Price" column="base_price" className="hidden sm:table-cell" />
+                            <Header label="Status" column="status" />
                             <th className="px-6 py-4 font-semibold hidden lg:table-cell text-right pr-8">Trend</th>
                         </tr>
                     </thead>
@@ -349,18 +356,24 @@ function IPOTable({ data }: { data: IPO[] }) {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 hidden lg:table-cell pr-8">
-                                    <div className="h-8 w-24 ml-auto">
+                                    <div className="h-12 w-32 ml-auto">
                                         {ipo.trend && ipo.trend.length > 1 ? (
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <LineChart data={ipo.trend}>
-                                                    <Line type="monotone" dataKey="price" stroke={ipo.growth_percent >= 0 ? "#10b981" : "#ef4444"} strokeWidth={2} dot={false} />
-                                                </LineChart>
+                                                <BarChart data={ipo.trend}>
+                                                    <XAxis dataKey="date" hide />
+                                                    <RechartsTooltip
+                                                        contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '4px', fontSize: '10px', padding: '4px' }}
+                                                        itemStyle={{ color: '#fff', padding: 0 }}
+                                                        cursor={{fill: 'rgba(255,255,255,0.1)'}}
+                                                    />
+                                                    <Bar dataKey="price" fill={ipo.growth_percent >= 0 ? "#10b981" : "#ef4444"} radius={[2, 2, 0, 0]} />
+                                                </BarChart>
                                             </ResponsiveContainer>
                                         ) : (
-                                            <div className="flex justify-end gap-1 opacity-20">
-                                                <div className="w-1 h-3 bg-current rounded-full"></div>
-                                                <div className="w-1 h-2 bg-current rounded-full"></div>
-                                                <div className="w-1 h-4 bg-current rounded-full"></div>
+                                            <div className="flex justify-end gap-1 opacity-20 h-full items-end">
+                                                <div className="w-2 h-3 bg-current rounded-sm"></div>
+                                                <div className="w-2 h-5 bg-current rounded-sm"></div>
+                                                <div className="w-2 h-4 bg-current rounded-sm"></div>
                                             </div>
                                         )}
                                     </div>
@@ -382,6 +395,14 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<FilterState>({ type: "All", status: "All", gmpRange: "All" });
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: "listing_date", direction: "desc" });
+
+  const handleSort = (key: string) => {
+      setSortConfig(current => ({
+          key,
+          direction: current.key === key && current.direction === 'desc' ? 'asc' : 'desc'
+      }));
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -416,8 +437,31 @@ export default function Home() {
           if (min > 0) res = res.filter(i => i.growth_percent >= min);
       }
 
-      setFilteredIpos(res);
-  }, [ipos, searchQuery, filters]);
+      // Sort
+      if (sortConfig.key) {
+        res.sort((a, b) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let aVal = (a as any)[sortConfig.key];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let bVal = (b as any)[sortConfig.key];
+
+            // Handle Dates (assume string ISO or "TBA")
+            if (sortConfig.key === 'listing_date') {
+                if (!aVal) aVal = "0000-00-00";
+                if (!bVal) bVal = "0000-00-00";
+                // If it is 'TBA' put it at the end for desc, start for asc?
+                if (aVal === 'TBA') aVal = '9999-99-99';
+                if (bVal === 'TBA') bVal = '9999-99-99';
+            }
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+      }
+
+      setFilteredIpos([...res]); // Spread to trigger re-render
+  }, [ipos, searchQuery, filters, sortConfig]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 bg-grid-dots transition-colors duration-300 pt-28 pb-10">
@@ -442,7 +486,7 @@ export default function Home() {
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
                 ) : (
-                    <IPOTable data={filteredIpos} />
+                    <IPOTable data={filteredIpos} sortConfig={sortConfig} onSort={handleSort} />
                 )}
             </main>
 

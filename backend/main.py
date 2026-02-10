@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 # Import Merger Service
 from services.ipo_merger import IPOMergerService
+from services.market_data import update_market_data
 
 # Initialize DB
 Base.metadata.create_all(bind=engine)
@@ -25,11 +26,6 @@ app.add_middleware(
 )
 
 # --- TASKS ---
-def update_market_indices():
-    # In a real app, scrape Yahoo Finance or similar
-    # For now, we mock or use existing logic if any
-    pass
-
 def scrape_job():
     print("Running scheduled scrape...")
     session = DBSession()
@@ -41,9 +37,20 @@ def scrape_job():
     finally:
         session.close()
 
+def market_data_job():
+    print("Running market data update...")
+    session = DBSession()
+    try:
+        update_market_data(session)
+    except Exception as e:
+        print(f"Market Data Update Failed: {e}")
+    finally:
+        session.close()
+
 scheduler = BackgroundScheduler()
 # Schedule every hour
 scheduler.add_job(scrape_job, 'interval', hours=1)
+scheduler.add_job(market_data_job, 'interval', hours=1)
 scheduler.start()
 
 # --- ROUTES ---
@@ -104,13 +111,32 @@ def get_ipos():
 
 @app.get("/market-indices")
 def get_indices():
-    # Mock data for now as we focus on IPOs
-    return [
-        {"name": "NIFTY 50", "price": 22123.45, "percent": 0.34, "is_positive": True},
-        {"name": "SENSEX", "price": 72987.12, "percent": -0.12, "is_positive": False},
-        {"name": "BANK NIFTY", "price": 46500.00, "percent": 0.8, "is_positive": True},
-        {"name": "INDIA VIX", "price": 15.2, "percent": -2.1, "is_positive": False}
-    ]
+    session = DBSession()
+    try:
+        indices = session.query(MarketIndex).all()
+        if not indices:
+             # Fallback to mock if empty (or return empty list)
+             return []
+
+        result = []
+        # Sort so NIFTY 50 and SENSEX are first
+        def sort_key(x):
+            if x.name == "NIFTY 50": return 0
+            if x.name == "SENSEX": return 1
+            return 2
+
+        sorted_indices = sorted(indices, key=sort_key)
+
+        for idx in sorted_indices:
+            result.append({
+                "name": idx.name,
+                "price": idx.current_price,
+                "percent": idx.change_percent,
+                "is_positive": idx.change_percent >= 0
+            })
+        return result
+    finally:
+        session.close()
 
 # --- PREDICTION ENDPOINTS ---
 
@@ -222,6 +248,7 @@ def predict_allotment(req: AllotmentRequest):
 def startup_event():
     # Trigger a scrape shortly after startup
     scheduler.add_job(scrape_job, 'date', run_date=datetime.datetime.now() + datetime.timedelta(seconds=5))
+    scheduler.add_job(market_data_job, 'date', run_date=datetime.datetime.now() + datetime.timedelta(seconds=10))
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
